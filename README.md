@@ -1,12 +1,19 @@
 # citus-kibernetes-setup
 
-This repository provides a step-by-step guide and scripts to set up a local Citus (PostgreSQL extension for distributed databases) environment using Minikube, Helm, and Docker.
+Ta repozitorija ponuja vodnik po koraki za ustvarjanje lokalno Citus okolje z Minikube, Helm in Docker.
 
 ---
 
-## 🚀 Setup Steps
+## Predpogoji
 
-### 1. Start Minikube with Docker Driver
+- [Docker](https://docs.docker.com/get-docker/)
+- [Minikube](https://minikube.sigs.k8s.io/docs/start/)
+- [kubectl](https://kubernetes.io/docs/tasks/tools/)
+- [Helm](https://helm.sh/docs/intro/install/)
+
+## Setup koraki
+
+### 1. Zagon minikubea z docker driver
 
 ```bash
 minikube start --driver=docker
@@ -14,14 +21,11 @@ minikube start --driver=docker
 
 ---
 
-### 2. Install Citus with Helm
+### 2. Namestitev Citus z Helm
 
-This script installs the `cert-manager` and `citus` via Helm charts.
-
-**File:** `helm/citus-install.sh`
+Ta skripta namesti `cert-manager` in `citus` skozi Helm charts.
 
 ```bash
-#!/bin/bash
 helm repo add jetstack https://charts.jetstack.io
 helm repo update
 helm install cert-manager --create-namespace --namespace cert-manager \
@@ -33,54 +37,44 @@ helm install citus prates-charts/citus --debug --wait
 
 ---
 
-### 3. Create Docker Network
+### 3. Docker Omrežje
 
-Create a network for containers to communicate.
-
-**File:** `docker/create-network.sh`
+Omrezje za komunikacijo med kontejnerji.
 
 ```bash
-#!/bin/bash
 docker network create citus-network
 ```
 
 ---
 
-### 4. Start Worker Containers
+### 4. Worker vozlišči
 
-Start two worker nodes.
-
-**File:** `docker/worker1-start.sh`
+Kreiranje worker vozlišči.
 
 ```bash
-#!/bin/bash
 docker run -d --name worker1 --network citus-network -e POSTGRES_PASSWORD=mypassword citusdata/citus
 ```
 
-**File:** `docker/worker2-start.sh`
-
 ```bash
-#!/bin/bash
 docker run -d --name worker2 --network citus-network -e POSTGRES_PASSWORD=mypassword citusdata/citus
 ```
 
 ---
 
-### 5. Start Coordinator Container
+### 5. Coordinaor Kontejner
 
-Run the Citus coordinator container.
+Zagon koordinatorja.
 
 **File:** `docker/coordinator-start.sh`
 
 ```bash
-#!/bin/bash
 docker rm -f citus 2>/dev/null
 docker run -d --name coordinator --network citus-network -p 5500:5432 -e POSTGRES_PASSWORD=mypassword citusdata/citus
 ```
 
 ---
 
-### 6. Initialize Database
+### 6. Inicijalizacija podatkovne baze
 
 Access the coordinator with:
 
@@ -88,15 +82,16 @@ Access the coordinator with:
 docker exec -it coordinator psql -U postgres
 ```
 
-Then run the following SQL script to create and shard a table.
+Vzpostavljanje konekcijo z coordinator kontejnerja
 
-**File:** `sql/init-db.sql`
+```bash
+docker exec -it coordinator psql -U postgres
+```
+
+SQL skripta za kreiranje in ločitev tabelo
 
 ```sql
--- Connect to coordinator container with:
--- docker exec -it coordinator psql -U postgres
-
--- Optional: Add worker nodes manually if not automatically discovered
+-- ročno dodajanje worker vozlišči
 -- SELECT * from citus_add_node('worker1', 5432);
 -- SELECT * from citus_add_node('worker2', 5432);
 
