@@ -26,11 +26,6 @@ minikube start --driver=docker
 Ta skripta namesti `cert-manager` in `citus` skozi Helm charts.
 
 ```bash
-helm repo add jetstack https://charts.jetstack.io
-helm repo update
-helm install cert-manager --create-namespace --namespace cert-manager \
-  --version v1.5.4 jetstack/cert-manager --set installCRDs=true --wait --debug
-
 helm repo add prates-charts https://sergioprates.github.io/prates-charts/
 helm install citus prates-charts/citus --debug --wait
 ```
@@ -51,55 +46,58 @@ docker network create citus-network
 
 Kreiranje worker vozlišči.
 
-```bash
-docker run -d --name worker1 --network citus-network -e POSTGRES_PASSWORD=mypassword citusdata/citus
-```
+Kreiranje in prvi zagon worker vozlišči.
 
 ```bash
+docker run -d --name worker1 --network citus-network -e POSTGRES_PASSWORD=mypassword citusdata/citus
 docker run -d --name worker2 --network citus-network -e POSTGRES_PASSWORD=mypassword citusdata/citus
+```
+
+Vsaki naslednji zagon worker vozlišči.
+
+```bash
+docker start worker1
+docker start worker2
 ```
 
 ---
 
-### 5. Coordinaor Kontejner
+### 5. Zagon PostgreSQL z Citus
 
-Zagon koordinatorja.
-
-**File:** `docker/coordinator-start.sh`
+PostgreSQL se zažene s Citus na vrat 5500
 
 ```bash
-docker rm -f citus 2>/dev/null
-docker run -d --name coordinator --network citus-network -p 5500:5432 -e POSTGRES_PASSWORD=mypassword citusdata/citus
+docker run -d --name citus -p 5500:5432 -e POSTGRES_PASSWORD=mypassword citusdata/citus
+```
+
+Vsaki naslednji zagon citusa
+
+```bash
+docker start citus
 ```
 
 ---
 
 ### 6. Inicijalizacija podatkovne baze
 
-Access the coordinator with:
+Vzpostavljanje konekcijo z coordinator kontejnerja.
 
 ```bash
-docker exec -it coordinator psql -U postgres
+docker exec -it citus psql -U postgres
 ```
 
-Vzpostavljanje konekcijo z coordinator kontejnerja
-
-```bash
-docker exec -it coordinator psql -U postgres
-```
-
-SQL skripta za kreiranje in ločitev tabelo
+PgSQL skripta za kreiranje in ločenje (sharding) tabelo.
 
 ```sql
--- ročno dodajanje worker vozlišči
--- SELECT * from citus_add_node('worker1', 5432);
--- SELECT * from citus_add_node('worker2', 5432);
+CREATE TABLE t_shard (
+id          serial,
+shard_key   int,
+n           int,
+placeholder char(100) DEFAULT 'a');
 
-CREATE TABLE users (
-    id SERIAL PRIMARY KEY,
-    name TEXT,
-    email TEXT
-);
-
-SELECT create_distributed_table('users', 'id');
+SELECT create_distributed_table('t_shard', 'shard_key');
 ```
+
+---
+
+### Zaslonski posnetki
