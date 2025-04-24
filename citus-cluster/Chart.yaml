@@ -1,0 +1,6 @@
+apiVersion: v2
+name: citus-cluster
+description: A Helm chart for Citus DB (1 coordinator + 2 workers)
+type: application
+version: 0.1.0
+appVersion: "12.0"

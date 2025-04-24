@@ -1,0 +1,14 @@
+coordinator:
+  image: citusdata/citus:12.0
+  replicas: 1
+  port: 5432
+
+worker:
+  image: citusdata/citus:12.0
+  replicas: 2
+  port: 5432
+
+postgresPassword: postgres
+
+service:
+  port: 5432

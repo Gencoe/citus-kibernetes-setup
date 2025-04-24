@@ -21,72 +21,58 @@ minikube start --driver=docker
 
 ---
 
-### 2. Namestitev Citus z Helm
-
-Ta skripta namesti `cert-manager` in `citus` skozi Helm charts.
+### 2. Namestitev citus-cluster z Helm
 
 ```bash
-helm repo add prates-charts https://sergioprates.github.io/prates-charts/
-helm install citus prates-charts/citus --debug --wait
+helm install citus-cluster .
+```
+
+Preverjanje ali delujejo pods
+
+```bash
+kubectl get pods
 ```
 
 ---
 
-### 3. Docker Omrežje
+### 3. Registracija worker vozlišči z koordinatorja
 
-Omrezje za komunikacijo med kontejnerji.
-
-```bash
-docker network create citus-network
-```
-
----
-
-### 4. Worker vozlišči
-
-Kreiranje worker vozlišči.
-
-Kreiranje in prvi zagon worker vozlišči.
+Vhod v Coordinator pod.
 
 ```bash
-docker run -d --name worker1 --network citus-network -e POSTGRES_PASSWORD=mypassword citusdata/citus
-docker run -d --name worker2 --network citus-network -e POSTGRES_PASSWORD=mypassword citusdata/citus
+kubectl exec -it <ime-koordinatorja> -- bash
+psql -U postgres
 ```
 
-Vsaki naslednji zagon worker vozlišči.
+Ime Koordinatorja lahko se preveri z to skripto.
 
 ```bash
-docker start worker1
-docker start worker2
+kubectl get pods
 ```
 
----
+PgSQL skripta za ustvarjanje podatkovno bazo in citus extension
 
-### 5. Zagon PostgreSQL z Citus
-
-PostgreSQL se zažene s Citus na vrat 5500
-
-```bash
-docker run -d --name citus -p 5500:5432 -e POSTGRES_PASSWORD=mypassword citusdata/citus
+```sql
+CREATE DATABASE mydb;
+\c mydb
+CREATE EXTENSION citus;
 ```
 
-Vsaki naslednji zagon citusa
+PgSQL skripta za nastavitev coordinator host
 
-```bash
-docker start citus
+```sql
+SELECT citus_set_coordinator_host('coordinator.default.svc.cluster.local', 5432);
 ```
 
----
+PgSQL skripta za dodajanje worker vozlišče
 
-### 6. Inicijalizacija podatkovne baze
-
-Vzpostavljanje konekcijo z coordinator kontejnerja.
-
-```bash
-docker exec -it citus psql -U postgres
+```sql
+SELECT citus_add_node('worker.default.svc.cluster.local', 5432)
+/*ali*/
+SELECT * FROM master_add_node('worker.default.svc.cluster.local', 5432);
 ```
 
-PgSQL skripta za kreiranje in ločenje (sharding) tabelo.
+PgSQL skripta za ustvaranje tabelo in distribucijo (sharding)
 
 ```sql
 CREATE TABLE t_shard (
@@ -98,6 +84,10 @@ placeholder char(100) DEFAULT 'a');
 SELECT create_distributed_table('t_shard', 'shard_key');
 ```
 
----
+PgSQL skripta za polnenje tabelo
 
-### Zaslonski posnetki
+```sql
+INSERT INTO t_shard (shard_key, n) 
+SELECT 	id % 16, random()*100000 
+FROM 		generate_series(1, 5000000) AS id;
+```
