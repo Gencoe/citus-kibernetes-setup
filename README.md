@@ -67,7 +67,7 @@ SELECT citus_set_coordinator_host('coordinator.default.svc.cluster.local', 5432)
 PgSQL skripta za dodajanje worker vozlišče
 
 ```sql
-SELECT citus_add_node('worker.default.svc.cluster.local', 5432)
+SELECT citus_add_node('worker.default.svc.cluster.local', 5432);
 /*ali*/
 SELECT * FROM master_add_node('worker.default.svc.cluster.local', 5432);
 ```
