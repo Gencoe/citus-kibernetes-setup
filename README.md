@@ -27,7 +27,7 @@ minikube start --driver=docker
 helm install citus-cluster .
 ```
 
-Preverjanje ali delujejo pods
+Preverjanje ali delujejo pods.
 
 ```bash
 kubectl get pods
@@ -50,7 +50,7 @@ Ime Koordinatorja lahko se preveri z to skripto.
 kubectl get pods
 ```
 
-PgSQL skripta za ustvarjanje podatkovno bazo in citus extension
+PgSQL skripta za ustvarjanje podatkovno bazo in citus extension.
 
 ```sql
 CREATE DATABASE mydb;
@@ -58,21 +58,23 @@ CREATE DATABASE mydb;
 CREATE EXTENSION citus;
 ```
 
-PgSQL skripta za nastavitev coordinator host
+PgSQL skripta za nastavitev coordinator host.
 
 ```sql
 SELECT citus_set_coordinator_host('coordinator.default.svc.cluster.local', 5432);
 ```
 
-PgSQL skripta za dodajanje worker vozlišče
+PgSQL skripta za dodajanje worker vozlišče.
 
 ```sql
-SELECT citus_add_node('worker.default.svc.cluster.local', 5432);
+SELECT citus_add_node('worker-6fd76b89c8-jkjqr.default.svc.cluster.local', 5432);
+SELECT citus_add_node('worker-6fd76b89c8-np7kx.default.svc.cluster.local', 5432);
 /*ali*/
-SELECT * FROM master_add_node('worker.default.svc.cluster.local', 5432);
+SELECT master_add_node('worker-6fd76b89c8-jkjqr.default.svc.cluster.local', 5432);
+SELECT master_add_node('worker-6fd76b89c8-np7kx.default.svc.cluster.local', 5432);
 ```
 
-PgSQL skripta za ustvaranje tabelo in distribucijo (sharding)
+PgSQL skripta za ustvaranje tabelo in distribucijo (sharding).
 
 ```sql
 CREATE TABLE t_shard (
@@ -84,7 +86,7 @@ placeholder char(100) DEFAULT 'a');
 SELECT create_distributed_table('t_shard', 'shard_key');
 ```
 
-PgSQL skripta za polnenje tabelo
+PgSQL skripta za polnenje tabelo.
 
 ```sql
 INSERT INTO t_shard (shard_key, n) 
