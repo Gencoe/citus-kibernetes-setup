@@ -3,9 +3,9 @@ kind: Service
 metadata:
   name: worker
 spec:
+  clusterIP: None
   selector:
     app: worker
   ports:
     - port: 5432
       targetPort: 5432
-  type: ClusterIP

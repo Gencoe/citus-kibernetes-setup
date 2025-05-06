@@ -44,13 +44,21 @@ kubectl exec -it <ime-koordinatorja> -- bash
 psql -U postgres
 ```
 
-Ime Koordinatorja lahko se preveri z to skripto.
+Vhod v Worker pod.
+
+```bash
+kubectl exec -it <ime-delavca> -- bash
+psql -U postgres
+```
+
+Ime Koordinatorja/delavcev se lahko preveri z to skripto.
 
 ```bash
 kubectl get pods
 ```
 
 PgSQL skripta za ustvarjanje podatkovno bazo in citus extension.
+(Nujno je ustvariti podatkovno bazo in citus extension v vsak pod, ne glede tega ali je coordinator ali worker)
 
 ```sql
 CREATE DATABASE mydb;
@@ -58,20 +66,20 @@ CREATE DATABASE mydb;
 CREATE EXTENSION citus;
 ```
 
-PgSQL skripta za nastavitev coordinator host.
+PgSQL skripta za nastavitev coordinator host (skozi koordinatorja).
 
 ```sql
 SELECT citus_set_coordinator_host('coordinator.default.svc.cluster.local', 5432);
 ```
 
-PgSQL skripta za dodajanje worker vozlišče.
+PgSQL skripta za dodajanje worker vozlišče (skozi koordinatorja).
 
 ```sql
-SELECT citus_add_node('worker-6fd76b89c8-jkjqr.default.svc.cluster.local', 5432);
-SELECT citus_add_node('worker-6fd76b89c8-np7kx.default.svc.cluster.local', 5432);
+SELECT citus_add_node('worker-0.worker.default.svc.cluster.local', 5432);
+SELECT citus_add_node('worker-1.worker.default.svc.cluster.local', 5432);
 /*ali*/
-SELECT master_add_node('worker-6fd76b89c8-jkjqr.default.svc.cluster.local', 5432);
-SELECT master_add_node('worker-6fd76b89c8-np7kx.default.svc.cluster.local', 5432);
+SELECT master_add_node('worker-0.worker.default.svc.cluster.local', 5432);
+SELECT master_add_node('worker-1.worker.default.svc.cluster.local', 5432);
 ```
 
 PgSQL skripta za ustvaranje tabelo in distribucijo (sharding).
@@ -90,6 +98,6 @@ PgSQL skripta za polnenje tabelo.
 
 ```sql
 INSERT INTO t_shard (shard_key, n) 
-SELECT 	id % 16, random()*100000 
-FROM 		generate_series(1, 5000000) AS id;
+SELECT id % 16, random()*100000 
+FROM generate_series(1, 5000000) AS id;
 ```

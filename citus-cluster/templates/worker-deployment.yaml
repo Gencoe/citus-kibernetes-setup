@@ -1,8 +1,9 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: worker
 spec:
+  serviceName: "worker"  # must match headless service name
   replicas: {{ .Values.worker.replicas }}
   selector:
     matchLabels:
