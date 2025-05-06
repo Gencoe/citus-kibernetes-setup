@@ -1,4 +1,4 @@
-# citus-kibernetes-setup
+# citus-kubernetes-setup
 
 Ta repozitorija ponuja vodnik po koraki za ustvarjanje lokalno Citus okolje z Minikube, Helm in Docker.
 
